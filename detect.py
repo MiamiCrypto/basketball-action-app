@@ -44,19 +44,18 @@ def run_yolo_on_frames(input_dir, output_dir):
             box_center_y = (y1 + y2) // 2
 
             # Rule 1: Skip small boxes (likely distant fans)
-            if box_height < 100:
+            if box_height < 60:
                 continue
 
             # Rule 2: Skip people low on screen (likely fans)
             if box_center_y > frame.shape[0] * 0.85:
                 continue
 
-            # Rule 3 (optional): Filter out referees by average gray color
+            # Rule 3 (referee filter): tighter gray band
             roi = frame[y1:y2, x1:x2]
             avg_color = roi.mean(axis=(0, 1)) if roi.size else [0, 0, 0]
 
-            # Filter out gray (referee-like) colors
-            if 90 < avg_color[0] < 160 and 90 < avg_color[1] < 160 and 90 < avg_color[2] < 160:
+            if 100 < avg_color[0] < 150 and 100 < avg_color[1] < 150 and 100 < avg_color[2] < 150:
                 continue
 
             # Passed all filters, label as Player
