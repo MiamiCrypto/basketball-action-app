@@ -1,159 +1,69 @@
-## app.py
 import streamlit as st
-from detect import run_yolo_on_frames
-from pose_utils import extract_pose_from_image
 import os
+from detect import run_yolo_on_frames
 import shutil
-from pathlib import Path
-import cv2
+import uuid
 
-st.set_page_config(page_title="🏀 Basketball Player Detection", layout="wide")
-st.title("🏀 Basketball Player Detection")
+st.set_page_config(page_title="Basketball Action Detector", layout="centered")
+st.title("🏀 Basketball Action Detection App")
 
-uploaded_video = st.file_uploader("Upload a basketball video (MP4)", type=["mp4", "mov"])
+# Create working directories
+TEMP_DIR = "temp"
+FRAME_DIR = os.path.join(TEMP_DIR, "frames")
+OUTPUT_DIR = os.path.join("outputs")
+os.makedirs(FRAME_DIR, exist_ok=True)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-if uploaded_video:
-    # Save uploaded video
-    temp_video_path = "temp_input.mp4"
-    with open(temp_video_path, "wb") as f:
-        f.write(uploaded_video.read())
+# Upload or use default video
+uploaded_file = st.file_uploader("Upload a basketball video", type=["mp4"])
 
-    st.video(temp_video_path)
+if uploaded_file is not None:
+    video_id = str(uuid.uuid4())
+    video_path = os.path.join(TEMP_DIR, f"uploaded_{video_id}.mp4")
+    with open(video_path, "wb") as f:
+        f.write(uploaded_file.read())
+    st.video(video_path)
+else:
+    video_path = "test_videos/Lakers_short_clip.mp4"
+    st.info("Using built-in sample video.")
+    st.video(video_path)
 
-    # Prepare frame output directory
-    frames_dir = "frames"
-    output_dir = "outputs"
-    shutil.rmtree(frames_dir, ignore_errors=True)
-    shutil.rmtree(output_dir, ignore_errors=True)
-    os.makedirs(frames_dir, exist_ok=True)
+# Process button
+if st.button("Run Detection"):
+    st.write("📽️ Extracting frames from video...")
 
-    with st.spinner("Extracting frames from video..."):
-        # Extract every 3rd frame
-        cap = cv2.VideoCapture(temp_video_path)
-        i = 0
-        saved = 0
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            if i % 3 == 0:
-                path = os.path.join(frames_dir, f"frame_{saved:04d}.jpg")
-                cv2.imwrite(path, frame)
-                saved += 1
-            i += 1
-        cap.release()
+    # Extract frames using OpenCV
+    import cv2
+    cap = cv2.VideoCapture(video_path)
+    frame_count = 0
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frame_path = os.path.join(FRAME_DIR, f"frame_{frame_count:04d}.jpg")
+        cv2.imwrite(frame_path, frame)
+        frame_count += 1
+    cap.release()
+    st.success(f"Extracted {frame_count} frames")
 
-    st.write(f"Extracted {saved} frames")
-
-    # Run YOLOv8 Detection
-    os.makedirs(output_dir, exist_ok=True)
-    with st.spinner("Running player detection with YOLOv8..."):
-        result_paths = run_yolo_on_frames(frames_dir, output_dir)
-
-    st.success("Detection complete! Preview below:")
-    for path in result_paths[:5]:
-        st.image(path, caption=Path(path).name)
+    # Run detection
+    result_paths = run_yolo_on_frames(FRAME_DIR, OUTPUT_DIR)
 
     if result_paths:
+        st.success("Detection complete! Preview below:")
+        st.image(result_paths[0], caption="First Annotated Frame", use_column_width=True)
+
         with open(result_paths[0], "rb") as f:
-            st.download_button("Download First Annotated Frame", f, "annotated_frame.jpg")
+            st.download_button("📥 Download First Annotated Frame", f, file_name="annotated_frame.jpg")
+
+        if st.button("🕴️ Extract Pose from First Annotated Frame"):
+            st.warning("Pose extraction is coming soon.")
     else:
-        st.warning("No annotated frames to download.")
+        st.warning("No annotated frames to display or download.")
 
-    # Pose Estimation
-    if st.button("🧍 Extract Pose from First Annotated Frame"):
-        with st.spinner("Extracting pose landmarks..."):
-            pose_frame, joint_coords = extract_pose_from_image(result_paths[0]) if result_paths else (None, None)
-        if pose_frame is not None:
-            st.image(pose_frame, caption="Pose Detected")
-            st.write("Sample Joint Coordinates (normalized):")
-            st.json(joint_coords[:5])
-        else:
-            st.warning("No pose landmarks detected.")
-
-
-## detect.py
-from ultralytics import YOLO
-import cv2
-import os
-import streamlit as st
-
-def run_yolo_on_frames(input_dir, output_dir):
-    st.write("🚀 Loading YOLOv8 model...")
-    try:
-        model = YOLO("yolov8n.pt", task="detect")  # Force detect task to avoid torch.load issues
-    except Exception as e:
-        st.error(f"❌ Failed to load YOLO model: {e}")
-        return []
-
-    frame_files = sorted([f for f in os.listdir(input_dir) if f.endswith(".jpg")])
-    results = []
-
-    if not frame_files:
-        st.warning("⚠️ No frames found in the input directory.")
-        return []
-
-    st.write(f"📸 Processing {len(frame_files)} frames for player detection...")
-
-    for file in frame_files:
-        input_path = os.path.join(input_dir, file)
-        frame = cv2.imread(input_path)
-        if frame is None:
-            st.warning(f"⚠️ Could not read frame: {file}")
-            continue
-
-        try:
-            detections = model(frame)[0]
-        except Exception as e:
-            st.error(f"❌ Detection failed on {file}: {e}")
-            continue
-
-        person_found = False
-        for box in detections.boxes:
-            cls = int(box.cls[0])
-            if cls == 0:  # Class 0 = person
-                person_found = True
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(frame, "Player", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-
-        if not person_found:
-            st.info(f"No players detected in frame: {file}")
-
-        output_path = os.path.join(output_dir, file)
-        cv2.imwrite(output_path, frame)
-        results.append(output_path)
-
-    st.success("✅ Detection complete.")
-    return results
-
-
-## pose_utils.py
-import cv2
-import mediapipe as mp
-
-mp_pose = mp.solutions.pose
-
-def extract_pose_from_image(image_path):
-    image = cv2.imread(image_path)
-    if image is None:
-        return None, None
-
-    with mp_pose.Pose(static_image_mode=True) as pose:
-        results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-
-        if not results.pose_landmarks:
-            return image, None
-
-        # Draw landmarks
-        annotated_image = image.copy()
-        mp.solutions.drawing_utils.draw_landmarks(
-            annotated_image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
-
-        # Extract coordinates
-        joints = []
-        for lm in results.pose_landmarks.landmark:
-            joints.append((lm.x, lm.y))
-
-        return annotated_image, joints
+# Cleanup function on rerun
+if st.button("Clear Temporary Files"):
+    shutil.rmtree(TEMP_DIR, ignore_errors=True)
+    os.makedirs(FRAME_DIR, exist_ok=True)
+    st.info("Temporary files cleared.")
 
