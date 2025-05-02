@@ -1,3 +1,4 @@
+## detect.py
 from ultralytics import YOLO
 import cv2
 import os
@@ -6,7 +7,7 @@ import streamlit as st
 def run_yolo_on_frames(input_dir, output_dir):
     st.write("🚀 Loading YOLOv8 model...")
     try:
-        model = YOLO("yolov8n.pt")  # Load YOLOv8n (lightweight version)
+        model = YOLO.from_pretrained("yolov8n.pt")  # Safe model loading in PyTorch 2.6+
     except Exception as e:
         st.error(f"❌ Failed to load YOLO model: {e}")
         return []
@@ -36,7 +37,7 @@ def run_yolo_on_frames(input_dir, output_dir):
         person_found = False
         for box in detections.boxes:
             cls = int(box.cls[0])
-            if cls == 0:  # class 0 = person
+            if cls == 0:  # Class 0 = person
                 person_found = True
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
