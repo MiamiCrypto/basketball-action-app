@@ -27,40 +27,43 @@ if uploaded_video:
     shutil.rmtree(output_dir, ignore_errors=True)
     os.makedirs(frames_dir, exist_ok=True)
 
-    # Extract every 3rd frame
-    cap = cv2.VideoCapture(temp_video_path)
-    i = 0
-    saved = 0
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-        if i % 3 == 0:
-            path = os.path.join(frames_dir, f"frame_{saved:04d}.jpg")
-            cv2.imwrite(path, frame)
-            saved += 1
-        i += 1
-    cap.release()
+    with st.spinner("Extracting frames from video..."):
+        # Extract every 3rd frame
+        cap = cv2.VideoCapture(temp_video_path)
+        i = 0
+        saved = 0
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+            if i % 3 == 0:
+                path = os.path.join(frames_dir, f"frame_{saved:04d}.jpg")
+                cv2.imwrite(path, frame)
+                saved += 1
+            i += 1
+        cap.release()
 
     st.write(f"Extracted {saved} frames")
 
     # Run YOLOv8 Detection
     os.makedirs(output_dir, exist_ok=True)
-    result_paths = run_yolo_on_frames(frames_dir, output_dir)
+    with st.spinner("Running player detection with YOLOv8..."):
+        result_paths = run_yolo_on_frames(frames_dir, output_dir)
 
     st.success("Detection complete! Preview below:")
     for path in result_paths[:5]:
         st.image(path, caption=Path(path).name)
-        
+
     if result_paths:
         with open(result_paths[0], "rb") as f:
             st.download_button("Download First Annotated Frame", f, "annotated_frame.jpg")
-    else: 
-        st.warning("No annotated frames to download.")       
+    else:
+        st.warning("No annotated frames to download.")
 
     # Pose Estimation
     if st.button("🧍 Extract Pose from First Annotated Frame"):
-        pose_frame, joint_coords = extract_pose_from_image(result_paths[0])
+        with st.spinner("Extracting pose landmarks..."):
+            pose_frame, joint_coords = extract_pose_from_image(result_paths[0]) if result_paths else (None, None)
         if pose_frame is not None:
             st.image(pose_frame, caption="Pose Detected")
             st.write("Sample Joint Coordinates (normalized):")
@@ -78,7 +81,7 @@ import streamlit as st
 def run_yolo_on_frames(input_dir, output_dir):
     st.write("🚀 Loading YOLOv8 model...")
     try:
-        model = YOLO("yolov8n.pt", task="detect")  # Load the lightweight model
+        model = YOLO("yolov8n.pt", task="detect")  # Force detect task to avoid torch.load issues
     except Exception as e:
         st.error(f"❌ Failed to load YOLO model: {e}")
         return []
@@ -153,3 +156,4 @@ def extract_pose_from_image(image_path):
             joints.append((lm.x, lm.y))
 
         return annotated_image, joints
+
