@@ -1,13 +1,12 @@
-## detect.py
 from ultralytics import YOLO
 import cv2
 import os
 import streamlit as st
 
 def run_yolo_on_frames(input_dir, output_dir):
-    st.write("🚀 Loading YOLOv8 model from local file...")
+    st.write("🚀 Loading YOLOv8 model...")
     try:
-        model = YOLO("model/yolov8n.pt")  # Load from clean model path
+        model = YOLO("yolov8n.pt")  # Load YOLOv8n (lightweight version)
     except Exception as e:
         st.error(f"❌ Failed to load YOLO model: {e}")
         return []
@@ -29,8 +28,7 @@ def run_yolo_on_frames(input_dir, output_dir):
             continue
 
         try:
-            results_yolo = model.predict(source=frame, save=False, verbose=False)
-            detections = results_yolo[0]
+            detections = model(frame)[0]
         except Exception as e:
             st.error(f"❌ Detection failed on {file}: {e}")
             continue
@@ -38,7 +36,7 @@ def run_yolo_on_frames(input_dir, output_dir):
         person_found = False
         for box in detections.boxes:
             cls = int(box.cls[0])
-            if cls == 0:  # Class 0 = person
+            if cls == 0:  # class 0 = person
                 person_found = True
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
