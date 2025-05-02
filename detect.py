@@ -1,4 +1,5 @@
 ## detect.py
+import torch
 from ultralytics import YOLO
 import cv2
 import os
@@ -7,7 +8,8 @@ import streamlit as st
 def run_yolo_on_frames(input_dir, output_dir):
     st.write("🚀 Loading YOLOv8 model...")
     try:
-        model = YOLO.from_pretrained("yolov8n.pt")  # Safe model loading in PyTorch 2.6+
+        with torch.serialization.safe_load_context():
+            model = YOLO("yolov8n.pt")
     except Exception as e:
         st.error(f"❌ Failed to load YOLO model: {e}")
         return []
