@@ -1,21 +1,13 @@
 ## detect.py
-import torch
-from ultralytics.nn.tasks import DetectionModel
-from ultralytics.utils import DEFAULT_CFG
+from ultralytics import YOLO
 import cv2
 import os
 import streamlit as st
 
-
 def run_yolo_on_frames(input_dir, output_dir):
     st.write("🚀 Loading YOLOv8 model from local file...")
     try:
-        # Load the model explicitly from local .pt with weights_only=False
-        model_path = os.path.join("models", "yolov8n.pt")
-        ckpt = torch.load(model_path, map_location="cpu", weights_only=False)
-        model = DetectionModel(cfg=DEFAULT_CFG.model)
-        model.load_state_dict(ckpt["model"].float().state_dict())
-        model.eval()
+        model = YOLO("models/yolov8n.pt")  # Load full model with internal handling
     except Exception as e:
         st.error(f"❌ Failed to load YOLO model: {e}")
         return []
