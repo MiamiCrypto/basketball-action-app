@@ -1,27 +1,44 @@
 # 🏀 Basketball Action App
 
-This is a Streamlit-based computer vision application for detecting basketball players in game footage using YOLOv8. It allows you to upload a video clip, extract frames, run player detection, and preview/download annotated images.
+Basketball Action Detection App
 
-## 🚀 Features
+This application allows you to upload a basketball game video, detect players on the court, and annotate their positions frame-by-frame using YOLOv8.
 
-- Upload basketball video clips (MP4 or MOV)
-- Extract every 3rd frame for efficient processing
-- Detect players in each frame using YOLOv8
-- Annotate frames with bounding boxes labeled "Player"
-- Preview results in the browser
-- Download sample annotated frame
+📂 Folder Structure
 
-## 🧰 Technologies
+basketball-action-detector/
+├── app.py                  # Streamlit UI
+├── detect.py               # Detection logic (YOLOv8)
+├── utils.py                # Frame extraction and helper tools
+├── model/                  # YOLOv8 model weights (yolov8n.pt)
+├── test_videos/            # 🟡 Place your video files here
+├── outputs/                # Annotated frame results
+├── requirements.txt        # Dependencies
+└── README.md               # This file
 
-- [Streamlit](https://streamlit.io/)
-- [YOLOv8 (Ultralytics)](https://docs.ultralytics.com/)
-- OpenCV
-- Python
+🚀 How to Use
 
-## 📦 Installation
+Download the Sample VideoYou can download a demo basketball clip to test the app.
+➡️ Place it in the test_videos/ folder.
 
-```bash
-git clone https://github.com/YOUR_USERNAME/basketball-action-app.git
-cd basketball-action-app
-pip install -r requirements.txt
+Run the Streamlit App
+
 streamlit run app.py
+
+Upload a Clip
+
+Choose your .mp4 file from the test_videos/ folder
+
+The app will extract frames and perform YOLO detection
+
+Download/Preview Results
+
+You can download the first annotated frame
+
+Optionally extract pose landmarks from it (coming soon)
+
+🔧 About the Download / Pose Buttons
+
+Download First Annotated Frame: Saves the first detection result so you can verify the labeling quickly without downloading all outputs.
+
+Extract Pose from First Annotated Frame (WIP): Will eventually run pose estimation (e.g., MediaPipe) on that same frame to classify actions like dribble, walk, or run.
