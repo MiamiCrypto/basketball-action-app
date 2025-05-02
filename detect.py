@@ -1,3 +1,4 @@
+## detect.py
 from ultralytics import YOLO
 import cv2
 import os
@@ -33,17 +34,34 @@ def run_yolo_on_frames(input_dir, output_dir):
             st.error(f"❌ Detection failed on {file}: {e}")
             continue
 
-        person_found = False
         for box in detections.boxes:
             cls = int(box.cls[0])
-            if cls == 0:  # class 0 = person
-                person_found = True
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(frame, "Player", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+            if cls != 0:
+                continue  # only detect people
 
-        if not person_found:
-            st.info(f"No players detected in frame: {file}")
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            box_height = y2 - y1
+            box_center_y = (y1 + y2) // 2
+
+            # Rule 1: Skip small boxes (likely distant fans)
+            if box_height < 100:
+                continue
+
+            # Rule 2: Skip people low on screen (likely fans)
+            if box_center_y > frame.shape[0] * 0.85:
+                continue
+
+            # Rule 3 (optional): Filter out referees by average gray color
+            roi = frame[y1:y2, x1:x2]
+            avg_color = roi.mean(axis=(0, 1)) if roi.size else [0, 0, 0]
+
+            # Filter out gray (referee-like) colors
+            if 90 < avg_color[0] < 160 and 90 < avg_color[1] < 160 and 90 < avg_color[2] < 160:
+                continue
+
+            # Passed all filters, label as Player
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(frame, "Player", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
         output_path = os.path.join(output_dir, file)
         cv2.imwrite(output_path, frame)
