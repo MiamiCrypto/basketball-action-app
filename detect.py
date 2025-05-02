@@ -7,7 +7,7 @@ import streamlit as st
 def run_yolo_on_frames(input_dir, output_dir):
     st.write("🚀 Loading YOLOv8 model from local file...")
     try:
-        model = YOLO("models/yolov8n.pt")
+        model = YOLO("model/yolov8n.pt")  # Load from clean model path
     except Exception as e:
         st.error(f"❌ Failed to load YOLO model: {e}")
         return []
