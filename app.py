@@ -56,7 +56,8 @@ if st.button("Run Detection"):
 
     if result_paths:
         st.success("Detection complete! Preview below:")
-        st.image(result_paths[0], caption="First Annotated Frame", use_column_width=True)
+        for i, path in enumerate(result_paths[:5]):
+            st.image(path, caption=f"Annotated Frame {i+1}", use_column_width=True)
 
         with open(result_paths[0], "rb") as f:
             st.download_button("📥 Download First Annotated Frame", f, file_name="annotated_frame.jpg")
