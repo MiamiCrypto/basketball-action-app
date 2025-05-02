@@ -7,7 +7,7 @@ import streamlit as st
 def run_yolo_on_frames(input_dir, output_dir):
     st.write("🚀 Loading YOLOv8 model...")
     try:
-        model = YOLO("yolov8n.pt")  # Use pretrained weights for detection
+        model = YOLO("yolov8n")  # Use safe model hub loading
     except Exception as e:
         st.error(f"❌ Failed to load YOLO model: {e}")
         return []
