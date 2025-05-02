@@ -4,8 +4,8 @@ from detect import run_yolo_on_frames
 import shutil
 import uuid
 
-st.set_page_config(page_title="Basketball Action Detector", layout="centered")
-st.title("🏀 Basketball Action Detection App")
+st.set_page_config(page_title="Basketball Player Detection", layout="centered")
+st.title("🏀 Basketball Player Detection")
 
 # Create working directories
 TEMP_DIR = "temp"
@@ -14,18 +14,23 @@ OUTPUT_DIR = os.path.join("outputs")
 os.makedirs(FRAME_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# Upload or use default video
-uploaded_file = st.file_uploader("Upload a basketball video", type=["mp4"])
+# Choose between sample video and upload
+st.subheader("Select Video Source")
+video_source = st.radio("Choose a video input:", ["Use built-in Lakers clip", "Upload your own video"])
 
-if uploaded_file is not None:
-    video_id = str(uuid.uuid4())
-    video_path = os.path.join(TEMP_DIR, f"uploaded_{video_id}.mp4")
-    with open(video_path, "wb") as f:
-        f.write(uploaded_file.read())
-    st.video(video_path)
+if video_source == "Upload your own video":
+    uploaded_file = st.file_uploader("Upload a basketball video", type=["mp4"])
+    if uploaded_file is not None:
+        video_id = str(uuid.uuid4())
+        video_path = os.path.join(TEMP_DIR, f"uploaded_{video_id}.mp4")
+        with open(video_path, "wb") as f:
+            f.write(uploaded_file.read())
+        st.video(video_path)
+    else:
+        st.stop()
 else:
     video_path = "test_videos/Lakers_short_clip.mp4"
-    st.info("Using built-in sample video.")
+    st.info("Using built-in Lakers sample clip.")
     st.video(video_path)
 
 # Process button
