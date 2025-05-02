@@ -51,9 +51,12 @@ if uploaded_video:
     st.success("Detection complete! Preview below:")
     for path in result_paths[:5]:
         st.image(path, caption=Path(path).name)
-
-    with open(result_paths[0], "rb") as f:
-        st.download_button("Download First Annotated Frame", f, "annotated_frame.jpg")
+        
+    if result_paths:
+        with open(result_paths[0], "rb") as f:
+            st.download_button("Download First Annotated Frame", f, "annotated_frame.jpg")
+    else: 
+        st.warning("No annotated frames to download.")       
 
     # Pose Estimation
     if st.button("🧍 Extract Pose from First Annotated Frame"):
@@ -75,7 +78,7 @@ import streamlit as st
 def run_yolo_on_frames(input_dir, output_dir):
     st.write("🚀 Loading YOLOv8 model...")
     try:
-        model = YOLO("yolov8n.pt")  # Load the lightweight model
+        model = YOLO("yolov8n.pt", task="detect")  # Load the lightweight model
     except Exception as e:
         st.error(f"❌ Failed to load YOLO model: {e}")
         return []
