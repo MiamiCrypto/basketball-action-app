@@ -18,8 +18,9 @@ basketball-action-detector/
 
 🚀 How to Use
 
-Download the Sample VideoYou can download a demo basketball clip to test the app.
-➡️ Place it in the test_videos/ folder.
+Use the Built-in Sample Video or Upload Your OwnThe app includes a built-in sample clip (sample_clip.mp4) located in the test_videos/ folder. This video will load automatically if no upload is provided.
+
+Alternatively, you may upload your own .mp4 basketball clip directly through the app interface.
 
 Run the Streamlit App
 
